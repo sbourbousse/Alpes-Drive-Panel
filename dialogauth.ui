@@ -112,11 +112,25 @@
      <string/>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButtonConnect_2">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>220</y>
+      <width>101</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Annuler</string>
+    </property>
+   </widget>
    <zorder>layoutWidget_2</zorder>
    <zorder>layoutWidget</zorder>
    <zorder>pushButtonConnect</zorder>
    <zorder>pushButtonPasswordOublie</zorder>
    <zorder>labelErreurConnexion</zorder>
+   <zorder>pushButtonConnect_2</zorder>
   </widget>
  </widget>
  <resources/>

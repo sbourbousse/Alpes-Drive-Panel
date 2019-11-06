@@ -3,6 +3,7 @@
 #include "dialogcategorie.h"
 #include <QSqlQuery>
 #include <QDebug>
+#include <QtGui>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -13,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent) :
     chargerTableauProduit();
     chargerComboBoxUnite();
     ui->stackedWidgetProduit->setCurrentIndex(0);
+    ui->stackedWidgetVariete->setCurrentIndex(0);
 }
 
 MainWindow::~MainWindow()
@@ -184,12 +186,14 @@ void MainWindow::chargerTableauVariete()
     ui->tableWidgetVariete->setRowCount(0);
 
     //Requete pour rechercher les varietes de mon produit
-    QSqlQuery maRequete("select produitId, varieteId, varieteLibelle, varietePrixUnitaire, varieteQuantite, uniteLibelle, varieteDisponible "
-                        "from Produit natural join Variete inner join Unite on varieteUnite=uniteId "
-                        "where Produit.produitId="+idDuProduit);
+    QString texteReq="select produitId, varieteId, varieteLibelle, round(avg(prix),2), sum(quantite), uniteLibelle, varieteDisponible, count(prodId), typeVenteLibelle "
+                     "from Produit natural join Variete inner join Unite on varieteUnite=uniteId natural join Proposer natural join TypeVente "
+                     "where Produit.produitId="+idDuProduit+" and varieteDisponible=1 "
+                     "group by produitId,varieteId,varieteLibelle,uniteLibelle, varieteDisponible,typeVenteLibelle";
+    QSqlQuery maRequete(texteReq);
     //qDebug()<<"select produitId, varieteId, varieteLibelle, varietePrixUnitaire, varieteQuantite, uniteLibelle, varieteDisponible from Produit natural join Variete inner join Unite on varieteUnite=uniteId where Produit.produitId="<<idDuProduit;
-
-    int nombreDeColonnes = 7; //7 colonnes dont 2 caché (identifiants)
+    qDebug()<<texteReq;
+    int nombreDeColonnes = 8; //8 colonnes dont 2 caché (identifiants)
     ui->tableWidgetVariete->setColumnCount(nombreDeColonnes);
 
     int compteurDeLignes = 0;
@@ -207,26 +211,44 @@ void MainWindow::chargerTableauVariete()
             //Je créé un élément qui va correspondre à une cellule du tableau
             QTableWidgetItem *elementDuTableau = new QTableWidgetItem;
 
+            //Si on tombe sur le champs avg(prix)
+            if(compteurDeColonnes==3)
+            {
+                QString monPrix = maRequete.value(compteurDeColonnes).toString()+"€ "+maRequete.value(8).toString();
+                elementDuTableau->setText(monPrix);
+            }
             //Si on tombe sur le champ "varieteDisponible"
-            if(compteurDeColonnes==6)
+            else if(compteurDeColonnes==6)
             {
                 if(maRequete.value(compteurDeColonnes)==true)
                     elementDuTableau->setText("Oui"); //J'y ajoute un champ de ma requete
                 else
                     elementDuTableau->setText("Non"); //J'y ajoute un champ de ma requete
             }
+            //Si on tombe sur le champs count(prodId)
+            else if(compteurDeColonnes==7)
+            {
+                if(maRequete.value(compteurDeColonnes)<1)
+                    elementDuTableau->setText("aucun producteur"); //J'y ajoute un champ de ma requete
+                else if (maRequete.value(compteurDeColonnes)==1)
+                    elementDuTableau->setText("1 producteur");
+                else if (maRequete.value(compteurDeColonnes)>1)
+                    elementDuTableau->setText(maRequete.value(compteurDeColonnes).toString()+" producteurs"); //J'y ajoute un champ de ma requete
+                else
+                    elementDuTableau->setText("Modérateur");
+            }
             else
                 elementDuTableau->setText(maRequete.value(compteurDeColonnes).toString()); //J'y ajoute un champ de ma requete
 
             //J'ajoute l'élément dans le bon endroit du tableau
             ui->tableWidgetVariete->setItem(compteurDeLignes,compteurDeColonnes,elementDuTableau);
-            //qDebug()<<"Ligne : "<<compteurDeLignes<<" | Colonne : "<<compteurDeColonnes<<" | Element : "<<maRequete.value(compteurDeColonnes).toString();
+            qDebug()<<"Ligne : "<<compteurDeLignes<<" | Colonne : "<<compteurDeColonnes<<" | Element : "<<maRequete.value(compteurDeColonnes).toString();
         }
         compteurDeLignes++;
     }
 
     //Apparence du tableau
-    QStringList mesEntetes= {"Identifiant du produit","Identifiant de la variete","Libelle","Prix Unitaire","Quantite","Unité","Disponible"};
+    QStringList mesEntetes= {"Identifiant du produit","Identifiant de la variete","Libelle","Prix moyen","Quantite","Unité","Disponible","Vendu par"};
     ui->tableWidgetVariete->setHorizontalHeaderLabels(mesEntetes);
     ui->tableWidgetVariete->hideColumn(0);
     ui->tableWidgetVariete->hideColumn(1);
@@ -237,7 +259,7 @@ void MainWindow::chargerTableauVariete()
 void MainWindow::chargerComboBoxUnite()
 {
     //Effacer tout ce qu'il ya
-    ui->comboBoxUniteVariete->clear();
+    ui->comboBoxUniteModif->clear();
 
     //Recuperer toute les unité dans la table Unité
     QSqlQuery maRequete("select uniteId,uniteLibelle from Unite");
@@ -246,7 +268,7 @@ void MainWindow::chargerComboBoxUnite()
     while(maRequete.next())
     {
         //J'ajoute id en data + libelle en texte a comboBox
-        ui->comboBoxUniteVariete->addItem(maRequete.value(1).toString(),maRequete.value(0));
+        ui->comboBoxUniteModif->addItem(maRequete.value(1).toString(),maRequete.value(0));
     }
 }
 
@@ -260,6 +282,7 @@ void MainWindow::on_tableWidgetProduit_cellClicked(int row, int column)
 
 void MainWindow::on_pushButtonAjoutVarieteAjout_clicked()
 {
+    /*
     //Variable booleenne pour verifier si tout les champs sont correctement remplis
     bool isValid = true;
 
@@ -307,11 +330,126 @@ void MainWindow::on_pushButtonAjoutVarieteAjout_clicked()
     }
     else
         ui->labelErrorMessageVarieteAjout->setText("Les champs ne sont pas remplis correctement");
+    */
 }
 
 
 void MainWindow::on_tableWidgetVariete_itemSelectionChanged()
 {
-    ui->pushButtonSupprimerVariete->setEnabled(ui->tableWidgetVariete->selectedItems().count()>0);
-    ui->pushButtonModifierVariete->setEnabled(ui->tableWidgetVariete->selectedItems().count()>0);
+    if (ui->tableWidgetVariete->selectedItems().count()>0)
+    {
+        ui->pushButtonSupprimerVariete->setEnabled(true);
+        ui->pushButtonModifierVariete->setEnabled(true);
+        ui->pushButtonConsulterVariete->setEnabled(true);
+        auto varieteId = ui->tableWidgetVariete->item(ui->tableWidgetVariete->currentRow(),0)->text();
+        auto produitId = ui->tableWidgetVariete->item(ui->tableWidgetVariete->currentRow(),1)->text();
+
+        chargerTableauProducteurVariete(varieteId);
+
+        QString maRequeteText = "select varieteLibelle, round(avg(prix),2), varieteDisponible, varieteImage, sum(quantite), varieteUnite "
+                                "from Variete natural join Proposer "
+                                "where Variete.produitId="+produitId+" and Variete.varieteId="+varieteId+" "
+                                "group by produitId,varieteId";
+
+
+        qDebug()<<maRequeteText;
+        QSqlQuery maRequete(maRequeteText);
+
+        maRequete.first();
+
+        ui->lineEditLibelleVarieteModif->setText(maRequete.value(0).toString());
+        ui->doubleSpinBoxPrixUnitaireVarieteModif->setValue(maRequete.value(1).toDouble());
+        ui->checkBoxDisponibleModif->setChecked(maRequete.value(2).toBool());
+        imageVariete=maRequete.value(3).toString();
+        ui->spinBoxQuantiteVarieteModif->setValue(maRequete.value(4).toInt());
+        ui->comboBoxUniteModif->setCurrentIndex(ui->comboBoxUniteModif->findData(maRequete.value(5).toInt()));
+    }
+    else
+    {
+        ui->tableWidgetProducteurVariete->setRowCount(0);
+        ui->pushButtonSupprimerVariete->setEnabled(false);
+        ui->pushButtonModifierVariete->setEnabled(false);
+        ui->pushButtonConsulterVariete->setEnabled(false);
+        imageVariete="";
+    }
+
+}
+
+void MainWindow::on_pushButtonModifierVariete_clicked()
+{
+    ui->stackedWidgetVariete->setCurrentIndex(0);
+}
+
+void MainWindow::on_pushButtonConsulterVariete_clicked()
+{
+    ui->stackedWidgetVariete->setCurrentIndex(1);
+
+}
+
+void MainWindow::chargerTableauProducteurVariete(QString idVariete)
+{
+    QString maRequeteText = "select proposerId, prodPrenom, prodNom, prix, quantite, dateAjoute, valide, uniteLettre "
+                            "from Producteur natural join Proposer natural join Variete inner join Unite on Variete.varieteUnite=Unite.uniteId "
+                            "where Proposer.produitId="+idDuProduit+" and Proposer.varieteId="+idVariete+" "
+                            "order by dateAjoute";
+    qDebug()<<maRequeteText;
+    QSqlQuery maRequete(maRequeteText);
+
+    //Reinitialiser le tableau
+    ui->tableWidgetProducteurVariete->setRowCount(0);
+
+    int nombreDeColonnes = 6 ; //id (caché) + 5
+    ui->tableWidgetProducteurVariete->setColumnCount(nombreDeColonnes);
+
+    int compteurDeLignes = 0;
+
+    while(maRequete.next())
+    {
+        //J'ajoute une ligne
+        ui->tableWidgetProducteurVariete->insertRow(compteurDeLignes);
+        //qDebug()<<"+1 ligne";
+
+        //Pour chaque colonne
+        for(int compteurDeColonnes = 0 ; compteurDeColonnes<nombreDeColonnes ; compteurDeColonnes++)
+        {
+            //Je créé un élément qui va correspondre à une cellule du tableau
+            QTableWidgetItem *elementDuTableau = new QTableWidgetItem;
+
+            elementDuTableau->setText(maRequete.value(compteurDeColonnes).toString()); //J'y ajoute un champ de ma requete
+
+
+            if(compteurDeColonnes==4) //Si la requete renvoie le champs quantite
+                elementDuTableau->setText(maRequete.value(4).toString()+" "+maRequete.value(7).toString()); //J'ajoute ma quantite + la letter de l'unité
+            else
+                elementDuTableau->setText(maRequete.value(compteurDeColonnes).toString()); //J'y ajoute un champ de ma requete
+
+            //J'ajoute l'élément dans le bon endroit du tableau
+            ui->tableWidgetProducteurVariete->setItem(compteurDeLignes,compteurDeColonnes,elementDuTableau);
+        }
+        if (!maRequete.value(6).toBool())
+        {
+            for(int i = 0 ; i<nombreDeColonnes ; i++)
+                   ui->tableWidgetProducteurVariete->item(compteurDeLignes, i)->setBackground(QColor(125,125,125));
+        }
+        compteurDeLignes++;
+    }
+
+    //Apparence du tableau
+    QStringList mesEntetes= {"Identifiant","Nom","Prénom","Prix","Quantite","Date"};
+    ui->tableWidgetProducteurVariete->setHorizontalHeaderLabels(mesEntetes);
+    ui->tableWidgetProducteurVariete->hideColumn(0);
+    ui->tableWidgetProducteurVariete->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    ui->tableWidgetProducteurVariete->verticalHeader()->setVisible(false);
+}
+
+void MainWindow::on_pushButtonAccepterVarietePropose_clicked()
+{
+    QString maRequeteText = "update Proposer set valide=1 "
+                            "where proposerId="+ui->tableWidgetProducteurVariete->item(ui->tableWidgetProducteurVariete->currentRow(),0)->text();
+    qDebug()<<maRequeteText;
+    QSqlQuery maRequete(maRequeteText);
+
+    int nombreDeColonnes = 6 ; //id (caché) + 5
+    for(int i = 0 ; i<nombreDeColonnes ; i++)
+           ui->tableWidgetProducteurVariete->item(ui->tableWidgetVariete->currentRow(), i)->setBackground(QColor(255,255,255));
 }

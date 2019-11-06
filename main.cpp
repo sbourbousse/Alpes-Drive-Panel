@@ -22,14 +22,16 @@ int main(int argc, char *argv[])
     /*
      * AUTHENTIFICATION
      */
-    MainWindow w;
-    DialogAuth 	authWindow;
-    authWindow.show();
 
-    if(authWindow.exec()==QDialog::Accepted)
-    {
+    //DialogAuth 	authWindow;
+    //authWindow.show();
+
+    //if(authWindow.exec()==QDialog::Accepted)
+    //{
+        MainWindow w;
         w.show();
-    }
+    //}
+    // else Mettre un message d'erreur
 
 
     return a.exec();

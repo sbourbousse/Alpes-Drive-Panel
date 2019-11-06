@@ -47,6 +47,14 @@ private slots:
 
     void on_pushButtonModifierVariete_clicked();
 
+    void on_pushButtonSupprimerVariete_2_clicked();
+
+    void on_pushButtonConsulterVariete_clicked();
+
+    void chargerTableauProducteurVariete(QString idVariete);
+
+    void on_pushButtonAccepterVarietePropose_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString idProduitAModif,idDuProduit;
